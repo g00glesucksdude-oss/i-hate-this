@@ -22,7 +22,6 @@ local function decodeBase64(data)
     data = data:gsub("[^A-Za-z0-9+/=]", "")
     table.insert(debugLog, "Sanitized input: " .. data)
 
-    -- Auto-pad with '=' until length is divisible by 4
     local padCount = 0
     while #data % 4 ~= 0 do
         data = data .. "="
@@ -67,6 +66,29 @@ local function decodeBase64(data)
 
     local result = table.concat(bytes)
     table.insert(debugLog, "✅ Final decoded string: " .. result)
+
+    -- 🔍 Parse key structure
+    local parts = {}
+    for part in result:gmatch("[^-]+") do
+        table.insert(parts, part)
+    end
+
+    if #parts == 5 then
+        local prefix, word, expiry, nonce, rand = unpack(parts)
+        local now = os.time()
+        local expiryNum = tonumber(expiry)
+        local status = expiryNum and (expiryNum > now and "✅ Valid" or "❌ Expired") or "❌ Invalid expiry"
+
+        table.insert(debugLog, "\n🔍 Parsed Key:")
+        table.insert(debugLog, "Prefix: " .. prefix)
+        table.insert(debugLog, "Required Word: " .. word)
+        table.insert(debugLog, "Expiry: " .. expiry .. " (" .. status .. ")")
+        table.insert(debugLog, "Nonce: " .. nonce)
+        table.insert(debugLog, "Random: " .. rand)
+    else
+        table.insert(debugLog, "\n⚠️ Unable to parse key — expected 5 parts, got " .. #parts)
+    end
+
     return result, table.concat(debugLog, "\n")
 end
 
