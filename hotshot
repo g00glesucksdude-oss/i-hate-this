@@ -55,6 +55,11 @@ local function decodeBase64(data)
         end
     end
 
+    if #bytes == 0 then
+        table.insert(debugLog, "❌ No bytes extracted — decoding failed")
+        return nil, table.concat(debugLog, "\n")
+    end
+
     local result = table.concat(bytes)
     table.insert(debugLog, "✅ Final decoded string: " .. result)
     return result, table.concat(debugLog, "\n")
