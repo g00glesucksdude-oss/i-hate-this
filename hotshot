@@ -1,15 +1,31 @@
--- 🧬 Robust Base64 Decoder with Validation
+-- 🧬 Hardened Base64 Decoder
 local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 local b64lookup = {}
 for i = 1, #b64chars do
     b64lookup[b64chars:sub(i, i)] = i - 1
 end
 
+local function sanitizeBase64(data)
+    return data:gsub("%s", ""):gsub("[^A-Za-z0-9+/=]", "")
+end
+
 local function isValidBase64(s)
-    return s:match("^[A-Za-z0-9+/]+={0,2}$") ~= nil and (#s % 4 == 0)
+    return s:match("^[A-Za-z0-9+/=]+$") ~= nil and (#s % 4 == 0)
+end
+
+local function escapeNonPrintable(s)
+    return s:gsub(".", function(c)
+        local byte = string.byte(c)
+        if byte < 32 or byte > 126 then
+            return string.format("\\x%02X", byte)
+        else
+            return c
+        end
+    end)
 end
 
 local function safeBase64Decode(data)
+    data = sanitizeBase64(data)
     if not isValidBase64(data) then
         return nil, "Invalid Base64 format"
     end
@@ -35,6 +51,98 @@ local function safeBase64Decode(data)
         end
     end
 
+    return table.concat(bytes), nil
+end
+
+-- 🖥️ GUI Setup
+local gui = Instance.new("ScreenGui")
+gui.Name = "Base64Decoder"
+gui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 400, 0, 260)
+frame.Position = UDim2.new(0.5, -200, 0.5, -130)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+
+local input = Instance.new("TextBox", frame)
+input.Size = UDim2.new(1, -20, 0, 40)
+input.Position = UDim2.new(0, 10, 0, 10)
+input.PlaceholderText = "Paste base64 string here"
+input.TextScaled = true
+input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+input.TextColor3 = Color3.new(1, 1, 1)
+
+local decodeButton = Instance.new("TextButton", frame)
+decodeButton.Size = UDim2.new(0.5, -15, 0, 40)
+decodeButton.Position = UDim2.new(0, 10, 0, 60)
+decodeButton.Text = "Decode"
+decodeButton.TextScaled = true
+decodeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+decodeButton.TextColor3 = Color3.new(1, 1, 1)
+
+local clearButton = Instance.new("TextButton", frame)
+clearButton.Size = UDim2.new(0.5, -15, 0, 40)
+clearButton.Position = UDim2.new(0.5, 5, 0, 60)
+clearButton.Text = "Clear"
+clearButton.TextScaled = true
+clearButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+clearButton.TextColor3 = Color3.new(1, 1, 1)
+
+local outputLabel = Instance.new("TextLabel", frame)
+outputLabel.Size = UDim2.new(1, -20, 0, 80)
+outputLabel.Position = UDim2.new(0, 10, 0, 110)
+outputLabel.TextColor3 = Color3.new(0.8, 1, 0.8)
+outputLabel.BackgroundTransparency = 1
+outputLabel.TextScaled = true
+outputLabel.TextWrapped = true
+outputLabel.Text = "Decoded output will appear here"
+
+local debugLabel = Instance.new("TextLabel", frame)
+debugLabel.Size = UDim2.new(1, -20, 0, 30)
+debugLabel.Position = UDim2.new(0, 10, 0, 195)
+debugLabel.TextColor3 = Color3.new(1, 0.8, 0.8)
+debugLabel.BackgroundTransparency = 1
+debugLabel.TextScaled = true
+debugLabel.Text = ""
+
+local close = Instance.new("TextButton", frame)
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -35, 0, 5)
+close.Text = "✕"
+close.TextScaled = true
+close.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+close.TextColor3 = Color3.new(1, 1, 1)
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+-- 🚦 Decode Logic
+decodeButton.MouseButton1Click:Connect(function()
+    local rawInput = input.Text:match("^%s*(.-)%s*$")
+    local success, decoded, err = pcall(safeBase64Decode, rawInput)
+
+    if not success then
+        debugLabel.Text = "❌ Runtime error"
+        outputLabel.Text = "—"
+        print("❌ Runtime error:", decoded)
+    elseif err then
+        debugLabel.Text = "❌ " .. err
+        outputLabel.Text = "—"
+        print("❌ Decode error:", err)
+    else
+        debugLabel.Text = "✅ Decoded successfully"
+        outputLabel.Text = escapeNonPrintable(decoded)
+        print("🔓 Decoded:", decoded)
+    end
+end)
+
+-- 🧹 Clear Logic
+clearButton.MouseButton1Click:Connect(function()
+    input.Text = ""
+    outputLabel.Text = "Decoded output will appear here"
+    debugLabel.Text = ""
+end)
     return table.concat(bytes), nil
 end
 
