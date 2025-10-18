@@ -71,8 +71,7 @@ decodeButton.TextScaled = true
 decodeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 decodeButton.TextColor3 = Color3.new(1, 1, 1)
 
-local clearButton = Instance.new("TextButton", frame)
-clearButton.Size = UDim2.new(0.5, -15, 0, 40)
+local clearButton = Instance.new("TextButton.Size = UDim2.new(0.5, -15, 0, 40)
 clearButton.Position = UDim2.new(0.5, 5, 0, 60)
 clearButton.Text = "Clear"
 clearButton.TextScaled = true
@@ -112,8 +111,8 @@ decodeButton.MouseButton1Click:Connect(function()
     local rawInput = input.Text:match("^%s*(.-)%s*$")
     local success, decoded, err = pcall(decodeBase64, rawInput)
 
-    if not success or err then
-        debugLabel.Text = "❌ " .. (err or "Runtime error")
+    if not success or err or not decoded then
+        debugLabel.Text = "❌ " .. (err or "Unknown decode failure")
         outputLabel.Text = "—"
         warn("Decode error:", err)
     else
