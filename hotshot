@@ -14,7 +14,7 @@ for i, char in ipairs(b64chars) do
     b64lookup[char] = i - 1
 end
 
--- 🧠 Decoder with full debug
+-- 🧠 Decoder with full debug and auto-padding
 local function decodeBase64(data)
     local debugLog = {}
     table.insert(debugLog, "Raw input: " .. data)
@@ -22,9 +22,14 @@ local function decodeBase64(data)
     data = data:gsub("[^A-Za-z0-9+/=]", "")
     table.insert(debugLog, "Sanitized input: " .. data)
 
-    if #data % 4 ~= 0 then
-        table.insert(debugLog, "❌ Input length not multiple of 4")
-        return nil, table.concat(debugLog, "\n")
+    -- Auto-pad with '=' until length is divisible by 4
+    local padCount = 0
+    while #data % 4 ~= 0 do
+        data = data .. "="
+        padCount += 1
+    end
+    if padCount > 0 then
+        table.insert(debugLog, "→ Auto-padded with " .. padCount .. " '=' to fix length")
     end
 
     local bytes, buffer, bits = {}, 0, 0
