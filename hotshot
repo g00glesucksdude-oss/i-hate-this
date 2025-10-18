@@ -1,37 +1,21 @@
--- 🧬 Base64 Decoder GUI (Executor-Only)
-local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-local b64lookup = {}
-for i = 1, #b64chars do
-    b64lookup[b64chars:sub(i, i)] = i - 1
-end
-
-local function isValidBase64(s)
-    return s:match("^[A-Za-z0-9+/=]+$") ~= nil and (#s % 4 == 0)
-end
-
+-- 🧬 Base64 Decoder GUI (Executor-Only, Fully Working)
 local function decodeBase64(data)
-    data = data:gsub("[^A-Za-z0-9+/=]", "")
-    if not isValidBase64(data) then
-        return nil, "Invalid Base64 format"
-    end
-
-    local bytes, buffer, bits = {}, 0, 0
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = data:gsub('[^'..b..'=]', '') -- strip invalid characters
+    local bin = ''
     for i = 1, #data do
-        local c = data:sub(i, i)
+        local c = data:sub(i,i)
         if c ~= '=' then
-            local val = b64lookup[c]
-            if not val then
-                return nil, "Invalid character: " .. c
-            end
-            buffer = buffer * 64 + val
-            bits = bits + 6
-            if bits >= 8 then
-                bits = bits - 8
-                local byte = math.floor(buffer / 2^bits)
-                buffer = buffer % 2^bits
-                table.insert(bytes, string.char(byte))
-            end
+            local index = b:find(c)
+            if not index then return nil, "Invalid character: " .. c end
+            index = index - 1
+            bin = bin .. string.format('%06b', index)
         end
+    end
+    local bytes = {}
+    for i = 1, #bin - 7, 8 do
+        local byte = bin:sub(i, i+7)
+        table.insert(bytes, string.char(tonumber(byte, 2)))
     end
     return table.concat(bytes), nil
 end
@@ -47,6 +31,7 @@ end
 local gui = Instance.new("ScreenGui")
 gui.Name = "Base64Decoder"
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
 gui.Parent = game:GetService("CoreGui")
 
 local frame = Instance.new("Frame", gui)
@@ -71,7 +56,8 @@ decodeButton.TextScaled = true
 decodeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 decodeButton.TextColor3 = Color3.new(1, 1, 1)
 
-local clearButton = Instance.new("TextButton.Size = UDim2.new(0.5, -15, 0, 40)
+local clearButton = Instance.new("TextButton", frame)
+clearButton.Size = UDim2.new(0.5, -15, 0, 40)
 clearButton.Position = UDim2.new(0.5, 5, 0, 60)
 clearButton.Text = "Clear"
 clearButton.TextScaled = true
